@@ -14,12 +14,13 @@ def index(request):
         if User.objects.filter(private_token=request.session['BookCatalogUserId']):
             user = User.objects.get(private_token=request.session['BookCatalogUserId'])
             books = Books.objects.filter(user = user)
+            author_id = ""
             for book in books:
+                author_id = ""
                 authors = book.author
                 authors = authors.replace("[","")
                 authors = authors.replace("]","")
                 authors = authors.split(",")
-                author_id = ""
                 for x in authors:
                     author_id = author_id + str(x) + ","
             author_id = author_id[:-1]

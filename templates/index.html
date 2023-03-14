@@ -1,0 +1,257 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Meta -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Title -->
+    <title>Home</title>
+
+    <!-- Local Styling -->
+    <link rel="stylesheet" href="{% static 'css/index.css' %}">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Ajax -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+</head>
+
+<body>
+    <section id="header">
+        <div class="search_outer">
+            <input type="search" id="search" class="search" placeholder="Search for books in your Collection"
+                onkeyup="CheckForSearch()">
+            <div id="search_icon" class="search_icon"><i class="fa fa-search"></i></div>
+        </div>
+        <a href="javascript:void(0)" id="new_book">New Book</a>
+        <div id="logoutbutton">
+            <a href="logout"><i class="fa fa-sign-out"></i></a>
+        </div>
+    </section>
+    <section id="body">
+        {% for book in books %}
+        <div class="card">
+            <div class="image_outer">
+                <img class="img" src="{{book.image_url}}" alt="Book Cover">
+                <div class="rating"><img class="star" src="{% static 'images/star.svg' %}"
+                        alt="">{{book.average_rating}}</div>
+                <div class="page_count">{{book.page_count}}</div>
+            </div>
+            <div class="outer_info" style="align-items: center;">
+                <div class="info">
+                    <div class="title">{{book.title}}</div>
+                    <div class="authors">
+                        {{author_id}}
+                    </div>
+                </div>
+                <a href="delete?id={{book.id}}" id="delete"><i style="color: #776BCC;" class="fa fa-trash"></i></a>
+            </div>
+        </div>
+        {% endfor %}
+        {% if books|length == 0 %}
+        <div id="no_books">
+            <i id="no_book_font" class="fa fa-book"></i>
+            <br>
+            <div class="no_books_text">No Books in your Collection</div>
+        </div>
+        {% endif %}
+    </section>
+    <section id="modal">
+        <!-- The Modal -->
+        <div id="myModal" class="modal">
+
+            <!-- Modal content -->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <span id="close" class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="search_outer" id="search_outer">
+                        <input type="search" id="search_modal_input" class="search"
+                            placeholder="Search for books Globally. Enter ISBN number"
+                            onkeyup="CheckForSearchInModal()">
+                        <div id="search_modal" class="search_icon"><i class="fa fa-search"></i></div>
+                    </div>
+
+                    <div id="searched_books_div" class="searched_books">
+                        <div class="loader_card list-container">
+                            <div class="loader"></div>
+                        </div>
+                        <div class="loader_card list-container">
+                            <div class="loader"></div>
+                        </div>
+                        <div class="loader_card list-container">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <script>
+        function get_books_from_backend(text) {
+            $.ajax({
+                type: 'POST',
+                url: "get_books",
+                data: {
+                    csrfmiddlewaretoken: '{{ csrf_token }}',
+                    'isbn': text,
+                },
+                success: function (response) {
+                    data = JSON.stringify(response);
+                    data_temp = JSON.stringify(response)
+                    data = JSON.parse(data);
+                    // get length of data
+                    var length = Object.keys(data).length;
+
+                    div_to_be_appended_to = document.getElementById("searched_books_div");
+                    div_to_be_appended_to.innerHTML = "";
+
+                    // Loop over data and append to div using card in above script comments
+                    for (var i = 0; i < length; i++) {
+                        var card = document.createElement("div");
+                        card.classList.add("card");
+                        var image_outer = document.createElement("div");
+                        image_outer.classList.add("image_outer");
+                        var img = document.createElement("img");
+                        img.classList.add("img");
+                        img.src = data[i]['image_url'];
+                        img.alt = "Book Cover";
+                        var rating = document.createElement("div");
+                        rating.classList.add("rating");
+                        var star = document.createElement("img");
+                        star.classList.add("star");
+                        star.src = "{% static 'images/star.svg' %}";
+                        star.alt = "";
+                        var average_rating = document.createElement("div");
+                        average_rating.innerHTML = data[i]['averageRating'] + "/5";
+                        var page_count = document.createElement("div");
+                        page_count.classList.add("page_count");
+                        page_count.innerHTML = data[i]['pageCount'];
+                        var info_search = document.createElement("div");
+                        info_search.classList.add("info_search");
+                        var title = document.createElement("div");
+                        title.classList.add("title");
+                        title.innerHTML = data[i]['title'];
+                        var authors = document.createElement("div");
+                        authors.classList.add("authors_search");
+                        console.log(data[i]['authors'].length)
+                        for (var j = 0; j < data[i]['authors'].length; j++) {
+                            authors.innerHTML += data[i]['authors'][j] + ", ";
+                        }
+                        var outer_info = document.createElement("div");
+                        outer_info.classList.add("outer_info");
+                        var add_to_collection = document.createElement("div");
+                        add_to_collection.classList.add("add_to_collection");
+                        var add_to_collection_a = document.createElement("a");
+                        add_to_collection_a.href = "add_book_to_collection?isbn=" + text;
+                        add_to_collection_a.innerHTML = "Add +";
+                        add_to_collection_a.addEventListener("click", function () {
+                            add_book_to_collection(data[i].id);
+                        });
+                        add_to_collection.appendChild(add_to_collection_a);
+                        info_search.appendChild(title);
+                        info_search.appendChild(authors);
+                        outer_info.appendChild(info_search);
+                        outer_info.appendChild(add_to_collection);
+                        info_search.appendChild(title);
+                        info_search.appendChild(authors);
+                        rating.appendChild(star);
+                        rating.appendChild(average_rating);
+                        image_outer.appendChild(img);
+                        image_outer.appendChild(rating);
+                        image_outer.appendChild(page_count);
+                        card.appendChild(image_outer);
+                        card.appendChild(outer_info);
+                        div_to_be_appended_to.appendChild(card);
+                    }
+
+
+                    // toast.classList.add('visible');
+                    // toast.querySelector('.toast-body').innerHTML = "Link Added!";
+                    // toast.classList.add('toast-body-success');
+                    // document.getElementById("hidden_toast").value = "on";
+                    // setTimeout(remove_toast,4000)
+                },
+                error: function (response) {
+                    alert('error')
+                }
+            });
+        }
+    </script>
+    <script>
+        const input = document.getElementById("search_modal_input");
+
+        input.addEventListener("keyup", function (event) {
+            if (event.keyCode == 13) {
+                event.preventDefault();
+                get_books_from_backend(input.value);
+            }
+        });
+    </script>
+
+    <script>
+        function CheckForSearch() {
+            if (document.getElementById("search").value != "") {
+                document.getElementById("search_icon").style.display = "none";
+            }
+            else {
+                document.getElementById("search_icon").style.display = "block";
+            }
+        }
+        function CheckForSearchInModal() {
+            if (document.getElementById("search_modal_input").value != "") {
+                document.getElementById("search_modal").style.display = "none";
+            }
+            else {
+                document.getElementById("search_modal").style.display = "block";
+            }
+        }
+    </script>
+    <script>
+        // Get the modal
+        var modal = document.getElementById("myModal");
+
+        // Get the button that opens the modal
+        var btn = document.getElementById("new_book");
+
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+
+        // When the user clicks the button, open the modal 
+        btn.onclick = function () {
+            modal.style.display = "block";
+        }
+
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function () {
+            modal.style.display = "none";
+        }
+
+        // When the user clicks anywhere outside of the modal, close it
+        window.onclick = function (event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+    <script>
+        $(document).ready(function () {
+            $("#search").on("keyup", function () {
+                var value = $(this).val().toLowerCase();
+                $(".card").filter(function () {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
